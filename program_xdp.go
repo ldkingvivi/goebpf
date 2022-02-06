@@ -9,6 +9,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/vishvananda/netlink"
 )
@@ -115,8 +116,10 @@ func (p *xdpProgram) Attach(data interface{}) error {
 		return fmt.Errorf("LinkByName() failed: %v", err)
 	}
 
+	log.Printf("select the mode: %+v", attachMode)
+
 	// Attach program
-	if err := netlink.LinkSetXdpFdWithFlags(link, p.fd, int(attachMode)); err != nil {
+	if err := netlink.LinkSetXdpFdWithFlags(link, p.fd, int(XdpAttachModeSkb)); err != nil {
 		return fmt.Errorf("LinkSetXdpFd() failed: %v", err)
 	}
 
