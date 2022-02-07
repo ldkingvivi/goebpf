@@ -124,7 +124,7 @@ func (p *xdpProgram) Attach(data interface{}) error {
 	}
 
 	p.ifname = ifaceName
-	p.mode = attachMode
+	p.mode = XdpAttachModeSkb
 
 	return nil
 }
