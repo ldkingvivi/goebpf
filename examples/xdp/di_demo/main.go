@@ -95,14 +95,14 @@ func main() {
 				fmt.Println("Action                 Counts")
 				dropCount, err := packetActionCount.LookupUint64(uint64(goebpf.XdpDrop))
 				if err != nil {
-					log.Printf("look up err: %+v", err)
+					log.Printf("drop count err: %+v", err)
 					continue
 				}
 				fmt.Printf("%d    %d\n", goebpf.XdpDrop, dropCount)
 
 				passCount, err := packetActionCount.LookupUint64(uint64(goebpf.XdpPass))
 				if err != nil {
-					log.Printf("look up err: %+v", err)
+					log.Printf("pass count err: %+v", err)
 					continue
 				}
 				fmt.Printf("%d    %d\n", goebpf.XdpPass, passCount)
@@ -121,6 +121,7 @@ func main() {
 
 	go func() {
 		<-sigchan
+		log.Printf("detach")
 		if err := xdp.Detach(); err != nil {
 			log.Printf("detach with err: %+v", err)
 			log.Printf("need to xdp-load manually")
