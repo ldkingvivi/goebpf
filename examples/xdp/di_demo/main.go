@@ -100,7 +100,7 @@ func main() {
 				}
 				fmt.Printf("%d    %d\n", goebpf.XdpDrop, dropCount)
 
-				passCount, err := packetActionCount.LookupUint64(goebpf.XdpPass)
+				passCount, err := packetActionCount.LookupUint64(2)
 				if err != nil {
 					log.Printf("pass count err: %+v", err)
 					continue
