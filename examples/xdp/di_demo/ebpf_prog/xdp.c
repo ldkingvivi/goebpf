@@ -25,12 +25,12 @@ struct iphdr {
 
 
 // eBPF map to store XDP decision
-// max entry to 2 since we only use XDP_PASS and XDP_DROP
+// max entry to 3 since we only use XDP_PASS and XDP_DROP
 BPF_MAP_DEF(action_count) = {
     .map_type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(__u32),
     .value_size = sizeof(__u64),
-    .max_entries = 2,
+    .max_entries = 3,
 };
 BPF_MAP_ADD(action_count);
 
