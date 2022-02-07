@@ -93,14 +93,14 @@ func main() {
 			select {
 			case <-ticker.C:
 				fmt.Println("Action                 Counts")
-				dropCount, err := packetActionCount.LookupUint64(uint64(goebpf.XdpDrop))
+				dropCount, err := packetActionCount.LookupUint64(goebpf.XdpDrop)
 				if err != nil {
 					log.Printf("drop count err: %+v", err)
 					continue
 				}
 				fmt.Printf("%d    %d\n", goebpf.XdpDrop, dropCount)
 
-				passCount, err := packetActionCount.LookupUint64(uint64(goebpf.XdpPass))
+				passCount, err := packetActionCount.LookupUint64(goebpf.XdpPass)
 				if err != nil {
 					log.Printf("pass count err: %+v", err)
 					continue
