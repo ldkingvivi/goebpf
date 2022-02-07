@@ -83,10 +83,6 @@ func main() {
 		fatalError("xdp.Attach(): %v", err)
 	}
 
-	// Add CTRL+C handler
-	ctrlC := make(chan os.Signal, 1)
-	signal.Notify(ctrlC, os.Interrupt)
-
 	// Print stat every second / exit on CTRL+C
 	fmt.Println("XDP program successfully loaded and attached. Counters refreshed every second.")
 	fmt.Println()
