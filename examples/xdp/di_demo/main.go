@@ -4,11 +4,13 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
-	"syscall"
+	"strings"
 	"time"
 
 	"github.com/dropbox/goebpf"
@@ -16,14 +18,18 @@ import (
 
 var configInt = flag.String("configInt", "", "Interface to bind XDP program to")
 var elf = flag.String("elf", "ebpf_prog/xdp.elf", "clang/llvm compiled binary file")
-var programName = flag.String("program", "packet_count", "Name of XDP program (function name)")
-
-//todo
+var ipList ipAddressList
 
 func main() {
+	flag.Var(&ipList, "drop", "IPv4 CIDR to DROP traffic from, repeatable")
 	flag.Parse()
+
 	if *configInt == "" {
-		fatalError("-iface is required.")
+		fatalError("-configInt is required.")
+	}
+
+	if len(ipList) == 0 {
+		fatalError("at least one IPv4 address to DROP required (-drop)")
 	}
 
 	// Create eBPF system / load .ELF files compiled by clang/llvm
@@ -35,17 +41,33 @@ func main() {
 	printBpfInfo(bpf)
 
 	// Find protocols eBPF map
-	protocols := bpf.GetMapByName("protocols")
-	if protocols == nil {
-		fatalError("eBPF map 'protocols' not found")
+	packetActionCount := bpf.GetMapByName("packets_action_count")
+	if packetActionCount == nil {
+		fatalError("eBPF map 'packets_action_count' not found")
+	}
+
+	denyIPs := bpf.GetMapByName("deny_ip_list")
+	if denyIPs == nil {
+		fatalError("eBPF map 'deny_ip_list' not found")
 	}
 
 	// Program name matches function name in xdp.c:
-	//      int packet_count(struct xdp_md *ctx)
-	xdp := bpf.GetProgramByName(*programName)
+	//      int packet_drop(struct xdp_md *ctx)
+	xdp := bpf.GetProgramByName("packet_drop")
 	if xdp == nil {
-		fatalError("Program '%s' not found.", *programName)
+		fatalError("Program 'packet_drop' not found.")
 	}
+
+	// Populate eBPF map with IPv4 addresses to block
+	fmt.Println("deny IPv4 addresses...")
+	for index, ip := range ipList {
+		fmt.Printf("\t%s\n", ip)
+		err := denyIPs.Insert(goebpf.CreateLPMtrieKey(ip), index)
+		if err != nil {
+			fatalError("Unable to Insert into eBPF map: %v", err)
+		}
+	}
+	fmt.Println()
 
 	// Load XDP program into kernel
 	err = xdp.Load()
@@ -71,17 +93,15 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
-			// Print only first 132 numbers (HOPOPT - SCTP)
-			for i := 0; i < 132; i++ {
-				value, err := protocols.LookupInt(i)
+			fmt.Println("IP                 DROPs")
+			for i := 1; i < 3; i++ {
+				value, err := packetActionCount.LookupUint64(i)
 				if err != nil {
 					fatalError("LookupInt failed: %v", err)
 				}
-				if value > 0 {
-					fmt.Printf("%s: %d ", getProtoName(i), value)
-				}
+				fmt.Printf("%d    %d\n", i, value)
 			}
-			fmt.Printf("\r")
+			fmt.Println()
 		case <-ctrlC:
 			fmt.Println("\nDetaching program and exit")
 			return
@@ -109,26 +129,28 @@ func printBpfInfo(bpf goebpf.System) {
 	fmt.Println()
 }
 
-// Converts IPPROTO number into string for well known protocols
-func getProtoName(proto int) string {
-	switch proto {
-	case syscall.IPPROTO_ENCAP:
-		return "IPPROTO_ENCAP"
-	case syscall.IPPROTO_GRE:
-		return "IPPROTO_GRE"
-	case syscall.IPPROTO_ICMP:
-		return "IPPROTO_ICMP"
-	case syscall.IPPROTO_IGMP:
-		return "IPPROTO_IGMP"
-	case syscall.IPPROTO_IPIP:
-		return "IPPROTO_IPIP"
-	case syscall.IPPROTO_SCTP:
-		return "IPPROTO_SCTP"
-	case syscall.IPPROTO_TCP:
-		return "IPPROTO_TCP"
-	case syscall.IPPROTO_UDP:
-		return "IPPROTO_UDP"
-	default:
-		return fmt.Sprintf("%v", proto)
+type ipAddressList []string
+
+func (i *ipAddressList) String() string {
+	return fmt.Sprintf("%+v", *i)
+}
+
+func (i *ipAddressList) Set(value string) error {
+	if len(*i) == 1024 {
+		return errors.New("up to 1024 IPv4 addresses supported")
 	}
+	// Validate that value is correct IPv4 address
+	if !strings.Contains(value, "/") {
+		value += "/32"
+	}
+	if strings.Contains(value, ":") {
+		return fmt.Errorf("%s is not an IPv4 address", value)
+	}
+	_, _, err := net.ParseCIDR(value)
+	if err != nil {
+		return err
+	}
+	// Valid, add to the list
+	*i = append(*i, value)
+	return nil
 }
