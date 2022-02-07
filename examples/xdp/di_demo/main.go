@@ -41,9 +41,9 @@ func main() {
 	printBpfInfo(bpf)
 
 	// Find protocols eBPF map
-	packetActionCount := bpf.GetMapByName("packets_action_count")
+	packetActionCount := bpf.GetMapByName("action_count")
 	if packetActionCount == nil {
-		fatalError("eBPF map 'packets_action_count' not found")
+		fatalError("eBPF map 'action_count' not found")
 	}
 
 	denyIPs := bpf.GetMapByName("deny_ip_list")

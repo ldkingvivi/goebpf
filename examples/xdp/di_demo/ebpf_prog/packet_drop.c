@@ -26,13 +26,13 @@ struct iphdr {
 
 // eBPF map to store XDP decision
 // max entry to 2 since we only use XDP_PASS and XDP_DROP
-BPF_MAP_DEF(packets_action_count) = {
+BPF_MAP_DEF(action_count) = {
     .map_type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(__u32),
     .value_size = sizeof(__u64),
     .max_entries = 2,
 };
-BPF_MAP_ADD(packets_action_count);
+BPF_MAP_ADD(action_count);
 
 
 // eBPF map to store deny_ip_list
@@ -48,7 +48,7 @@ BPF_MAP_ADD(deny_ip_list);
 
 static inline void report_action(__u32 action)
 {
-    __u64 *count = bpf_map_lookup_elem(&packets_action_count, &action);
+    __u64 *count = bpf_map_lookup_elem(&action_count, &action);
     if (count){
         (*count)++;
     }
