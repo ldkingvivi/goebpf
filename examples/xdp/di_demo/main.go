@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -93,11 +94,12 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Println("IP                 DROPs")
+			fmt.Println("Action                 Counts")
 			for i := 1; i < 3; i++ {
 				value, err := packetActionCount.LookupUint64(i)
 				if err != nil {
-					fatalError("LookupInt failed: %v", err)
+					log.Printf("look up err: %+v", err)
+					continue
 				}
 				fmt.Printf("%d    %d\n", i, value)
 			}
