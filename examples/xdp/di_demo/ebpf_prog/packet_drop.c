@@ -49,8 +49,9 @@ BPF_MAP_ADD(deny_ip_list);
 static __always_inline enum xdp_action report_action(u32 action)
 {
     __u64 *count = bpf_map_lookup_elem(&packets_action_count, &action);
-    if (count)
+    if (count){
         (*count)++;
+    }
 
     return action;
 }
