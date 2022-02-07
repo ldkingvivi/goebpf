@@ -30,7 +30,7 @@ BPF_MAP_DEF(action_count) = {
     .map_type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(__u32),
     .value_size = sizeof(__u64),
-    .max_entries = 4,
+    .max_entries = 2,
 };
 BPF_MAP_ADD(action_count);
 
