@@ -7,14 +7,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/dropbox/goebpf"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
-
-	"github.com/dropbox/goebpf"
 )
 
 var configInt = flag.String("configInt", "", "Interface to bind XDP program to")
@@ -81,7 +82,6 @@ func main() {
 	if err != nil {
 		fatalError("xdp.Attach(): %v", err)
 	}
-	defer xdp.Detach()
 
 	// Add CTRL+C handler
 	ctrlC := make(chan os.Signal, 1)
@@ -90,25 +90,44 @@ func main() {
 	// Print stat every second / exit on CTRL+C
 	fmt.Println("XDP program successfully loaded and attached. Counters refreshed every second.")
 	fmt.Println()
-	ticker := time.NewTicker(1 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			fmt.Println("Action                 Counts")
-			for i := 1; i < 3; i++ {
-				value, err := packetActionCount.LookupUint64(i)
-				if err != nil {
-					log.Printf("look up err: %+v", err)
-					continue
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Println("Action                 Counts")
+				for i := 1; i < 3; i++ {
+					value, err := packetActionCount.LookupUint64(i)
+					if err != nil {
+						log.Printf("look up err: %+v", err)
+						continue
+					}
+					fmt.Printf("%d    %d\n", i, value)
 				}
-				fmt.Printf("%d    %d\n", i, value)
+				fmt.Println()
 			}
-			fmt.Println()
-		case <-ctrlC:
-			fmt.Println("\nDetaching program and exit")
-			return
 		}
-	}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// graceful quit signal
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigchan
+		if err := xdp.Detach(); err != nil {
+			log.Printf("detach with err: %+v", err)
+			log.Printf("need to xdp-load manually")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
 }
 
 func fatalError(format string, args ...interface{}) {
