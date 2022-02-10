@@ -1,6 +1,6 @@
 #include "bpf_helpers.h"
 
-#define SAMPLE_SIZE 128ul
+#define SAMPLE_SIZE 128
 
 BPF_MAP_DEF(sample_packet) = {
         .map_type = BPF_MAP_TYPE_PERF_EVENT_ARRAY,
