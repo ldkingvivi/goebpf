@@ -49,10 +49,10 @@ func main() {
 	}
 
 	// Program name matches function name in xdp.c:
-	//      int packet_drop(struct xdp_md *ctx)
+	//      int xdp_sample_prog(struct xdp_md *ctx)
 	xdp := bpf.GetProgramByName("xdp_sample_prog")
 	if xdp == nil {
-		fatalError("Program 'packet_drop' not found.")
+		fatalError("Program 'xdp_sample_prog' not found.")
 	}
 
 	// Load XDP program into kernel

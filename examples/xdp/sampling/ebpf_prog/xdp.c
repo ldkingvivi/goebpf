@@ -11,7 +11,7 @@ BPF_MAP_DEF(sample_packet) = {
 BPF_MAP_ADD(sample_packet);
 
 
-SEC("xdp_sampling")
+SEC("xdp")
 int xdp_sample_prog(struct xdp_md *ctx) {
     void *data_end = (void *)(long)ctx->data_end;
     void *data = (void *)(long)ctx->data;
