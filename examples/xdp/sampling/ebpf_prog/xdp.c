@@ -5,7 +5,7 @@
 BPF_MAP_DEF(sample_packet) = {
         .map_type = BPF_MAP_TYPE_PERF_EVENT_ARRAY,
         .key_size = sizeof(__u32),
-        .value_size = sizeof(__u64),
+        .value_size = sizeof(__u32),
         .max_entries = 256,
 };
 BPF_MAP_ADD(sample_packet);
@@ -46,6 +46,7 @@ int xdp_sample_prog(struct xdp_md *ctx) {
             bpf_printk("perf_event_output failed: %d\n", ret);
     }
 
+    /* pass for now, need to add the tail call later */
     return XDP_PASS;
 }
 
