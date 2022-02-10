@@ -1,4 +1,7 @@
-#include "bpf_helpers.h"
+#include <linux/ptrace.h>
+#include <linux/version.h>
+#include <uapi/linux/bpf.h>
+#include <bpf/bpf_helpers.h>
 
 #define SAMPLE_SIZE 128ul
 
